@@ -1,0 +1,550 @@
+\documentclass{ctexart}
+\usepackage{tikz-cd,amsmath,multicol,amssymb}
+\usetikzlibrary{ arrows,  arrows.meta,  calc,  fit,  patterns,  plotmarks,  shapes.geometric,  shapes.misc,
+  shapes.symbols,  shapes.arrows,  shapes.callouts,  shapes.multipart,  shapes.gates.logic.US,
+  shapes.gates.logic.IEC,  circuits.logic.US,  circuits.logic.IEC,  circuits.logic.CDH,
+  circuits.ee.IEC,  datavisualization,  datavisualization.formats.functions,  er,
+  automata,  backgrounds,  chains,  topaths,  trees,  petri,  mindmap,  matrix,  calendar,
+  folding,  fadings,  shadings,  spy,  through,  turtle,  positioning,  scopes,decorations.fractals,  decorations.shapes,  decorations.text,  decorations.pathmorphing,  decorations.pathreplacing,  decorations.footprints,
+  decorations.markings,  shadows,  lindenmayersystems,  intersections,
+  fixedpointarithmetic,  fpu,  svg.path,  external,quotes
+}
+\tikzset{
+  every plot/.style={prefix=plots/pgf-},
+  shape example/.style={
+    color=black!30,
+    draw,
+    fill=yellow!30,
+    line width=.5cm,
+    inner xsep=2.5cm,
+    inner ysep=0.5cm}
+}
+\setmainfont{Times New Roman}
+\usepackage[centering,
+           top=2.54cm,bottom=2.54cm,right=2cm,left=2cm,
+           headsep=25pt,headheight=20pt]{geometry}
+\usepackage{hyperref}
+\hypersetup{unicode,hidelinks,
+            pdftitle={tikzcd: 基于TikZ的交换图包},
+            pdfkeywords={Commutative diagrams; TeX; LaTeX; ConTeXt; TikZ; pgf; tikz-cd; tikzcd},
+            pdfauthor=向禹
+           }
+\usepackage{listings}
+\lstset{language=TeX,columns=flexible,numberstyle=\footnotesize,escapechar=',
+keywordstyle=\bfseries}
+\usepackage{tcolorbox}\tcbuselibrary{skins,listings}
+\tcbset{bicolor,sidebyside,righthand width=5cm,
+sharp corners,boxrule=0.4pt,colback=green!5,colbacklower=green!20!black!20}
+\begin{document}
+\begin{center}
+\vspace*{1em}
+\tikz\node[scale=1.2]{%
+  \color{gray}\Huge\ttfamily \char`\{\textcolor{red!75!black}{tikzcd}\char`\}};
+
+\vspace{0.5em}
+{\Large\bfseries 基于Ti\emph{k}Z 的交换图包}
+
+\vspace{1em}
+{版本 0.9f \qquad 11.19, 2018}
+\end{center}
+\vspace{1.5em}
+
+Ti\emph{k}Z包本身是可以画出交换图和其他数学图形的,并生成高质量的图片。而tikz-cd包则是为画交换图提供了
+一系列简单的命令。Ti\emph{k}Z包也是可行的，但是没有必要，因为本包这里的例子几乎覆盖了大部分的情形。虽然画交换图的还有很多包，比如amscd，XY-pic，但是这里基于Ti\emph{k}Z的tikz-cd包语法与tikz接近，能够画出更为复杂更加漂亮的交换图。
+\tableofcontents
+\section{初始化}
+本包被TexLive自动收录，要加载此包，只需要在导言区输入\verb|\usepackage{tikz-cd}|或者加载Ti\emph{k}Z包以后再导入库\verb|\usetikzlibrary{cd}|。
+\subsection{画图}
+
+基本的话交换图的语法是下面的环境
+\begin{lstlisting}[numbers=left]
+\begin{tikzcd}[<选项>]
+<内容>
+\end{tikzcd}
+\end{lstlisting}
+
+此环境生成一个矩阵，类似于\texttt{tabular}环境，\texttt{[<选项>]}用来修改图的外观，在Ti\emph kZ包中的任意选项都可在这里使用。
+
+\texttt{tikzcd}环境中的元素都是以数学模式排版，但是您也可以把它放在\verb|\[...\]|或者\texttt{equation}环境中，使得交换图居中。
+
+
+
+\subsection{插入箭头}
+在\texttt{tikzcd}环境内，下面的命令是一样的，都生成箭头
+\begin{lstlisting}[numbers=left]
+\arrow[<选项>]
+\ar[<选项>]
+\end{lstlisting}
+
+这里的\texttt{[<选项>]}是一系列逗号隔开的选项，用来指定箭头指向，箭头类型，增加标签等。
+
+箭头的指向是靠一串包含\verb|r,l,d,u|（分别表示右左下上）的字符所确定，标签可以放在箭头上，其放置语法与Ti\emph{k}Z的quotes库的引用语法相同，注意下面的``phi"的使用
+\begin{tcblisting}{}
+  \begin{tikzcd}
+    A \arrow[rd] \arrow[r,"\phi"] & B \\
+                                   & C
+  \end{tikzcd}
+\end{tcblisting}
+
+要想进一步修改箭头的外观，注意\texttt{[<选项>]}可以使用Ti\emph{k}Z的\verb|\path|命令的任意参数，类似的，标签也可以通过下面的语法接受额外的选项：
+\begin{lstlisting}[numbers=left]
+``<标签内容>"<标签选项>
+\end{lstlisting}
+如果\texttt{<标签内容>}或\texttt{<标签选项>}含有逗号，那么它们需要用\verb|{}|包起来。
+\begin{tcblisting}{}
+\begin{tikzcd}
+  A \arrow[r, "\phi"] \arrow[d, red]
+    & B \arrow[d, "\psi" red] \\
+  C \arrow[r, red, "\eta" blue]
+    & D
+\end{tikzcd}
+\end{tcblisting}
+
+箭头可以有任意多个标签，反复使用\texttt{quotes}选项即可。下面的例子展示了如何控制标签的位置。尤其注意\texttt{<标签选项>}中的\texttt{swap}使得标签在箭头的另一侧，这里的\texttt{swap}等效为撇号\texttt{'}。
+\begin{tcblisting}{}
+\begin{tikzcd}
+  A \arrow[->,>=stealth,r, "\phi" near start, "\psi"swap, "\eta" near end] & B
+\end{tikzcd}
+\end{tcblisting}
+下面给出两个实际的例子。
+\begin{tcblisting}{}
+\begin{tikzcd}
+  T
+  \arrow[drr, bend left, "x"]
+  \arrow[ddr, bend right, "y"]
+  \arrow[dr, dotted, "{(x,y)}"description] & & \\
+    & X \times_Z Y \arrow[r, "p"] \arrow[d, "q"]
+      & X \arrow[d, "f"] \\
+    & Y \arrow[r, "g"]
+      & Z
+\end{tikzcd}
+\end{tcblisting}
+\begin{tcblisting}{righthand width=10cm}
+\begin{tikzcd}[column sep=tiny]
+    & \pi_1(U_1) \ar[dr] \ar[drr, "j_1", bend left=20]
+      &
+        &[1.5em] \\
+  \pi_1(U_1\cap U_2) \ar[ur, "i_1"] \ar[dr, "i_2"swap]
+    &
+      & \pi_1(U_1) \ast_{ \pi_1(U_1\cap U_2)} \pi_1(U_2) \ar[r, dashed, "\simeq"]
+        & \pi_1(X) \\
+    & \pi_1(U_2) \ar[ur]\ar[urr, "j_2"swap, bend right=20]
+      &
+        &
+\end{tikzcd}
+\end{tcblisting}
+
+\subsection{修改箭头参数\label{1-3}}
+本包预定了一系列的\verb|\arrow|选项来生成各种箭头。有的选项名字比较短比如\verb|hook|，有的选项则是以\LaTeX 的箭头命令来命名的（不带\verb|\|）比如\verb|dashrightarrow|。
+\begin{tcblisting}{}
+\begin{tikzcd}
+    X \arrow[r, hook] \arrow[dr, dashrightarrow]
+      & \bar{X} \arrow[d]\\
+      & Y
+  \end{tikzcd}
+\end{tcblisting}
+
+\begin{multicols}{2}\raggedcolumns
+  \subsubsection*{Basic arrows}
+  \begin{tabular}{ll}
+    \verb|{to head}|&\begin{tikzcd}{}\ar[r,to head]&{}\end{tikzcd}\\
+    \verb|{rightarrow}|&\begin{tikzcd}{}\ar[r,rightarrow]&{}\end{tikzcd}\\
+    \verb|{leftarrow}|&\begin{tikzcd}{}\ar[r,leftarrow]&{}\end{tikzcd}\\
+    \verb|{leftrightarrow}|&\begin{tikzcd}{}\ar[r,leftrightarrow]&{}\end{tikzcd}\\
+    \verb|{Rightarrow}|&\begin{tikzcd}{}\ar[r,Rightarrow]&{}\end{tikzcd}\\
+    \verb|{Leftarrow}|&\begin{tikzcd}{}\ar[r,Leftarrow]&{}\end{tikzcd}\\
+    \verb|{Leftrightarrow}|&\begin{tikzcd}{}\ar[r,Leftrightarrow]&{}\end{tikzcd}\\
+  \end{tabular}
+
+  \subsubsection*{Arrows from bar}
+  \begin{tabular}{ll}
+    \verb|{maps to}|&\begin{tikzcd}{}\ar[r,maps to]&{}\end{tikzcd}\\
+    \verb|{mapsto}|&\begin{tikzcd}{}\ar[r,mapsto]&{}\end{tikzcd}\\
+    \verb|{mapsfrom}|&\begin{tikzcd}{}\ar[r,mapsfrom]&{}\end{tikzcd}\\
+    \verb|{Mapsto}|&\begin{tikzcd}{}\ar[r,Mapsto]&{}\end{tikzcd}\\
+    \verb|{Mapsfrom}|&\begin{tikzcd}{}\ar[r,Mapsfrom]&{}\end{tikzcd}\\
+  \end{tabular}
+
+  \subsubsection*{Arrows with hook}
+  \begin{tabular}{ll}
+    \verb|{hook}|&\begin{tikzcd}{}\ar[r,hook]&{}\end{tikzcd}\\
+    \verb|{hook'}|&\begin{tikzcd}{}\ar[r,hook']&{}\end{tikzcd}\\
+    \verb|{hookrightarrow}|&\begin{tikzcd}{}\ar[r,hookrightarrow]&{}\end{tikzcd}\\
+    \verb|{hookleftarrow}|&\begin{tikzcd}{}\ar[r,hookleftarrow]&{}\end{tikzcd}\\
+  \end{tabular}
+
+  \subsubsection*{Arrows with tail}
+  \begin{tabular}{ll}
+    \verb|{tail}|&\begin{tikzcd}{}\ar[r,tail]&{}\end{tikzcd}\\
+    \verb|{rightarrowtail}|&\begin{tikzcd}{}\ar[r,rightarrowtail]&{}\end{tikzcd}\\
+    \verb|{leftarrowtail}|&\begin{tikzcd}{}\ar[r,leftarrowtail]&{}\end{tikzcd}\\
+  \end{tabular}
+
+  \subsubsection*{Two-headed arrows}
+  \begin{tabular}{ll}
+    \verb|{two heads}|&\begin{tikzcd}{}\ar[r,two heads]&{}\end{tikzcd}\\
+    \verb|{twoheadrightarrow}|&\begin{tikzcd}{}\ar[r,twoheadrightarrow]&{}\end{tikzcd}\\
+    \verb|{twoheadleftarrow}|&\begin{tikzcd}{}\ar[r,twoheadleftarrow]&{}\end{tikzcd}\\
+  \end{tabular}
+
+  \subsubsection*{Harpoons}
+  \begin{tabular}{ll}
+    \verb|{harpoon}|&\begin{tikzcd}{}\ar[r,harpoon]&{}\end{tikzcd}\\
+    \verb|{harpoon'}|&\begin{tikzcd}{}\ar[r,harpoon']&{}\end{tikzcd}\\
+    \verb|{rightharpoonup}|&\begin{tikzcd}{}\ar[r,rightharpoonup]&{}\end{tikzcd}\\
+    \verb|{rightharpoondown}|&\begin{tikzcd}{}\ar[r,rightharpoondown]&{}\end{tikzcd}\\
+    \verb|{leftharpoonup}|&\begin{tikzcd}{}\ar[r,leftharpoonup]&{}\end{tikzcd}\\
+    \verb|{leftharpoondown}|&\begin{tikzcd}{}\ar[r,leftharpoondown]&{}\end{tikzcd}\\
+  \end{tabular}
+
+  \subsubsection*{Dashed arrows}
+  \begin{tabular}{ll}
+    \verb|{dashed}|&\begin{tikzcd}{}\ar[r,leftharpoondown]&{}\end{tikzcd}\\
+    \verb|{dashrightarrow}|&\begin{tikzcd}{}\ar[r,dashrightarrow]&{}\end{tikzcd}\\
+    \verb|{dashleftarrow}|&\begin{tikzcd}{}\ar[r,dashleftarrow]&{}\end{tikzcd}\\
+  \end{tabular}
+
+  \subsubsection*{Squiggly arrows}
+  \begin{tabular}{ll}
+    \verb|{squiggly}|&\begin{tikzcd}{}\ar[r,squiggly]&{}\end{tikzcd}\\
+    \verb|{rightsquigarrow}|&\begin{tikzcd}{}\ar[r,rightsquigarrow]&{}\end{tikzcd}\\
+    \verb|{leftsquigarrow}|&\begin{tikzcd}{}\ar[r,leftsquigarrow]&{}\end{tikzcd}\\
+    \verb|{leftrightsquigarrow}|&\begin{tikzcd}{}\ar[r,leftrightsquigarrow]&{}\end{tikzcd}
+  \end{tabular}
+
+  \subsubsection*{Non-arrows}
+  \begin{tabular}{ll}
+    \verb|{no head}|&\begin{tikzcd}{}\ar[r,no head]&{}\end{tikzcd}\\
+    \verb|{no tail}|&\begin{tikzcd}{}\ar[r,no tail]&{}\end{tikzcd}\\
+    \verb|{dash}|&\begin{tikzcd}{}\ar[r,dash]&{}\end{tikzcd}\\
+    \verb|{equal}|&\begin{tikzcd}{}\ar[r,equal]&{}\end{tikzcd}\\
+  \end{tabular}
+\end{multicols}
+\begin{tcblisting}{}
+\begin{tikzcd}
+  A \arrow[r, tail, two heads, dashed] & B
+\end{tikzcd}
+\end{tcblisting}
+Ti\emph kZ本身的箭头选项\texttt{latex,stealth}也可以使用，以及加载了\texttt{arrows.meta}库以后的\texttt{Latex,Stealth}。
+\begin{tcblisting}{}
+\begin{tikzcd}
+  A \arrow[r,->,>=Stealth] & B\\  C \arrow[r,->,>=latex] & D
+\end{tikzcd}
+\end{tcblisting}
+\subsection{箭头的其他语法}
+下面的箭头命令形式是在标签的\texttt{quotes}语法出来之间的形式，现在看来似乎复杂了，但是为了向前的兼容性，其功能仍然是可用的。
+\begin{verbatim}
+\arrow[<选项>]{<方向>}<标签>
+\end{verbatim}
+
+其等价的命令\verb|\ar|也能用这种形式表达，这里是一个例子
+\begin{tcblisting}{}
+\begin{tikzcd}
+  A \arrow{d} \arrow{r}[near start]{\phi}[near end]{\psi}
+    & B \arrow[red]{d}{\xi} \\
+  C \arrow[red]{r}[blue]{\eta}
+    & D
+\end{tikzcd}
+\end{tcblisting}
+
+还有更加进一步简化的命令：
+\begin{verbatim}
+\rar[<选项>]<标签>  \lar[<选项>]<标签>  \dar[<选项>]<标签>  \uar[<选项>]<标签>
+\drar[<选项>]<标签> \urar[<选项>]<标签> \dlar[<选项>]<标签> \ular[<选项>]<标签>
+\end{verbatim}
+其中第一个等价于\verb|\arrow[<选项>]{r}<标签>|，剩下的同理。
+\section{控制交换图的外形}
+本节描述由此包定义的一系列专用化选项的关键词。要想全局设置的话，可以方便地使用如下命令：
+\begin{verbatim}
+\tikzcdset{<选项>}
+\end{verbatim}
+除了此包中的关键词，在Ti\emph{k}Z中的参数也会影响图的外观。
+\subsection{一般选项}
+{\color{red}\texttt{/tikz/commutative diagrams/every diagram}}\hfill （style，no value）
+
+这个样式应用于\texttt{tikzcd}环境。初始情形下，它包含如下选项：
+\begin{lstlisting}
+    /tikz/row sep=normal,
+    /tikz/column sep=normal,
+    /tikz/baseline=0pt
+\end{lstlisting}
+
+这里的\verb|baseline=0pt|设置使得公式的编号正确放置（有一个特例，单行的图固定在矩阵的基底上，这正是您想要的）。
+
+{\color{red}\texttt{/tikz/commutative diagrams/diagrams=<选项>}}\hfill （no default）
+
+这个关键词使得\verb|<选项>|附属于样式\verb|every diagram|。
+
+{\color{red}\texttt{/tikz/commutative diagrams/every matrix}}\hfill （style，no value）
+
+此样式用于Ti\emph{k}Z的矩阵，初始情形下，它的设置为：
+
+\verb|/tikz/inner sep=0pt|
+
+{\color{red}\texttt{/tikz/commutative diagrams/every cell}}\hfill （style，no value）
+
+此样式也是用于矩阵，初始情形下
+\begin{lstlisting}
+    /tikz/shape=asymmetrical rectangle,
+    /tikz/inner xsep=1ex,
+    /tikz/inner ysep=0.85ex
+\end{lstlisting}
+
+\texttt{inner xsep,inner ysep}选项决定了交换图的任意一个元素和指向它的箭头的距离。
+
+{\color{red}\texttt{/tikz/commutative diagrams/cells=<选项>}}\hfill （no default）
+
+此关键词将\verb|<选项>|附属给样式\verb|every cell|。
+
+{\color{red}\texttt{/tikz/commutative diagrams/row sep=<尺寸>}}\hfill （no default）
+
+此关键词的行为类似于Ti\emph{k}Z的前端\texttt{/tikz/row sep}选项。初始可取的尺寸及对应值如下：
+\begin{lstlisting}
+             tiny   small  scriptsize  normal  large  huge
+            0.45em  0.9em    1.35em    1.8em   2.7em  3.6em
+\end{lstlisting}
+
+注意，用\verb|\tikzcdset|全局设置\verb|row sep=1cm|是无效的，因为\verb|row sep|选项在每个图开始的时候都会重置。要想使得每个图都是\verb|row sep=1cm|，可以修改\verb|normal|的定义
+
+\verb|\tikzcdset{row sep/normal=1cm}|
+
+您还可以定义新的尺寸，但是注意PGF要求新的关键词要被直接初始化，例如定义一个尺寸\verb|my size|为\verb|1ex|，您应该使用
+
+\verb|row sep/my size/.initial=1ex|
+
+{\color{red}\texttt{/tikz/commutative diagrams/column sep=<尺寸>}}\hfill （no default）
+
+此关键词和上面的\verb|row sep|类似。可用的初始尺寸如下
+\begin{lstlisting}
+             tiny   small  scriptsize  normal  large  huge
+            0.6em   1.2em    1.8em     2.4em   3.6em  4.8em
+\end{lstlisting}
+
+{\color{red}\texttt{/tikz/commutative diagrams/sep=<尺寸>}}\hfill （no default）
+
+此关键词相当于同时设置\verb|row sep=<尺寸>，column sep=<尺寸>|。
+
+在下面的例子中，如果\verb|column sep|或者\verb|row sep|设置不合理，会使得三角形看起来太宽或太高。
+\begin{tcblisting}{}
+\begin{tikzcd}[column sep=small]
+               & A \arrow[dl] \arrow[dr] & \\
+  B \arrow{rr} &                         & C
+\end{tikzcd}
+\end{tcblisting}
+\begin{tcblisting}{}
+\begin{tikzcd}[row sep=tiny]
+                          & B \arrow[dd] \\
+  A \arrow[ur] \arrow[dr] &              \\
+                          & C
+\end{tikzcd}
+\end{tcblisting}
+\par{\color{red}\texttt{/tikz/commutative diagrams/cramped=<尺寸>}}\hfill （style，no value）
+\par 默认情形下，交换图元素周围会添加大量的空白，这对大的显示的图是合理的。此关键词除去了多余的空白，为小的图所定制。
+\par 下图稍微显示了\verb|cramped|和非\verb|cramped|样式的区别。
+\begin{lstlisting}
+    This \begin{tikzcd} A \arrow[r] & B \end{tikzcd} is a regular diagram.\\
+    This \begin{tikzcd}[cramped, sep=small] A \arrow[r] & B \end{tikzcd} is a cramped diagram.\\
+    This $A \to B$ is just a formula.
+\end{lstlisting}\par
+    This \begin{tikzcd} A \arrow[r] & B \end{tikzcd} is a regular diagram.\par
+    This \begin{tikzcd}[cramped, sep=small] A \arrow[r] & B \end{tikzcd} is a cramped diagram.\par
+    This $A \to B$ is just a formula.
+\par {\color{red}\texttt{/tikz/commutative diagrams/math mode=<布尔变量>}}\hfill （default true）
+\par 此关键词决定图里的内容是否以数学模式输出。如果全局设置或者在图里面设置的话，它会影响图的元素和箭头的标签，如果把它用在\verb|\arrow|选项里，它只影响标签。
+
+\par{\color{red}\texttt{/tikz/commutative diagrams/background color=<颜色>}}\hfill （no default 初始为白色）
+\par 此关键词存储颜色名，然后用来被填充背景的样式所读取，比如\verb|description|和\verb|crossing over|。注意此关键词并不会使得图的背景被填充。
+
+\begin{tcblisting}{}
+\begin{tikzcd}
+  T
+  \arrow[drr, bend left, "x"]
+  \arrow[ddr, bend right, "y"]
+  \arrow[dr, dotted,background color=blue!20, "{(x,y)}"description] & & \\
+    & X \times_Z Y \arrow[r, "p"] \arrow[d, "q"]
+      & X \arrow[d, "f"] \\
+    & Y \arrow[r, "g"]
+      & Z
+\end{tikzcd}
+\end{tcblisting}
+\subsection{箭头的全局选项}
+{\color{red}\texttt{/tikz/commutative diagrams/every arrow}}\hfill （style，no value）
+\par 此样式应用于\verb|\arrow|。初始情形下，它包含如下设置：
+\begin{lstlisting}
+     /tikz/draw,
+     /tikz/line width=rule_thickness,
+     rightarrow
+\end{lstlisting}
+\par{\color{red}\texttt{/tikz/commutative diagrams/arrows=<选项>}}\hfill （no default）\par
+此关键词将\verb|<选项>|附属给样式\verb|every arrow|。\par
+{\color{red}\texttt{/tikz/commutative diagrams/arrow style=<样式>}}\hfill （no default）\par
+\par 此关键词决定箭头类型是\S\ref{1-3}节中所列的哪一种。初始设置对于使用Computer Modern字体的任意字号都是适用的。可用的\verb|<样式>|选择有
+\begin{description}
+\item[Latin Modern]稍微修改初始设置，用于Latin Modern字体的任意字号。
+\item[math font]这个设置用到了\verb|Glyph| meta arrow 箭头类型。
+\item[tikz]此设置用了Ti\emph{k}Z的\verb|arrows.meta|库。
+\end{description}
+关键词的设置一般在导言区，而且只设置一次。
+\par 如果您是用来Computer Modern和Latin Modern以外的字体，您最好选择\verb|math style|样式。这种设置并不能保证和所有字体吻合，但是在很多场合得到的结果都是很好的。如果\verb|math font|样式产生不满意的结果，您可以考虑\verb|tikz|样式，并且设置\verb|/tikz/>=值|使得最切合您的字体。
+\begin{tcblisting}{}
+\tikzcdset{
+  arrow style=tikz,
+  diagrams={>={Straight Barb[scale=0.8]}}
+}
+\begin{tikzcd}
+  A \arrow[r, tail] \arrow[rd] & B \arrow[d, two heads]\\
+                               & D
+\end{tikzcd}
+\end{tcblisting}
+\subsection{箭头的绝对放置}
+\verb|\arrow|命令一般是在命令出现的地方生成一个箭头，然后指向相对它的一个位置，下面的关键词会覆盖这种行为，使得箭头的起止点都被选定。
+\par{\color{red}\texttt{/tikz/commutative diagrams/from=<参数>}}\hfill （no default）\par
+如果\texttt{<参数>}的形式是\texttt{<行数>-<列数>}，或者是一串由\texttt{r,l,d,u}组成的字符，这些关键词设定箭头起点是交换图矩阵中相应的元素。否则，此参数就被假定为节点的名字并且设定为箭头的起点。
+\par{\color{red}\texttt{/tikz/commutative diagrams/to=<参数>}}\hfill （no default）\par
+类似于\verb|from|，但是针对箭头终点的。
+
+我们可以给Ti\emph{k}Z矩阵中的每一个元素使用\verb||[<options>]||语法给它命名，就像下面例子中的矩阵元$C$一样。如果您想用\verb|from|或\verb|to|来引用节点的话，千万不要用只含有\verb|l,r,u,d|字符的名字来命名。下面来说明这些关键词的不同用处。
+\begin{tcblisting}{}
+\begin{tikzcd}
+  A \arrow[to=Z, red] \arrow[to=2-2, blue]
+    & B \\
+  |[alias=Z]| C
+    & D
+  \arrow[from=ul, to=1-2, purple]
+\end{tikzcd}
+\end{tcblisting}
+在下面的例子中，使用了空标签以便后面引用。\verb|draw=red|选项用来指示这些空节点的位置，当然如果您使用这个技巧，您就想移除这些节点了，
+\begin{tcblisting}{}
+\begin{tikzcd}[column sep=scriptsize]
+  A \arrow[dr] \arrow[rr, ""{name=U, below, draw=red}]{}
+    & & B \arrow[dl] \\
+    & C \arrow[Rightarrow, from=U, "\psi"]
+\end{tikzcd}
+\end{tcblisting}
+\begin{tcblisting}{}
+\begin{tikzcd}
+  A \arrow[r, bend left=50, ""{name=U, below, draw=red}]
+    \arrow[r, bend right=50, ""{name=D, draw=red}]
+    & B
+  \arrow[Rightarrow, from=U, to=D]
+\end{tikzcd}
+\end{tcblisting}
+\subsection{幻影箭头}
+有时候需要在图的格点之外插入一个符号，实现这种最简单的方法就是把标签设成一种不可见的箭头。
+\par{\color{red}\texttt{/tikz/commutative diagrams/to=<参数>}}\hfill （no default）\par
+生成不可见的箭头，指向此箭头的标签也是不可见的，标签会被固定在其连线的中点，以\verb|\textstyle|的形式排版。要想得到更小的标签，可以使用\verb|\scriptstyle|命令。
+\par 在下面的图片中，从$A$到$D$的箭头包含了\verb|phantom|选项，而\verb|\ulcorner|符号$(\ulcorner)$插在靠近起点$A$的地方。
+\begin{tcblisting}{}
+\begin{tikzcd}
+  A \arrow[r] \arrow[d] \arrow[dr, phantom, "\ulcorner", very near start]
+    & B \arrow[d] \\
+  C \arrow[r]
+    & D
+\end{tikzcd}
+\end{tcblisting}
+\subsection{合理调整箭头的位置}
+{\color{red}\texttt{/tikz/commutative diagrams/shift left=<距离>}}\hfill （default 0.56ex）\par
+通过\verb|<距离>|参数使得箭头向左偏移。
+\par {\color{red}\texttt{/tikz/commutative diagrams/shift right=<距离>}}\hfill （default 1）\par 等价于\verb|shift left=-<距离>|。
+\begin{tcblisting}{}
+\begin{tikzcd}
+  A \arrow[r, red, shift left=1.5ex] \arrow[r]
+    \arrow[dr, blue, shift right=1.5ex] \arrow[dr]
+    & B \arrow[d, purple, shift left=1.5ex] \arrow[d]\\
+    & C
+\end{tikzcd}
+\end{tcblisting}
+\par 默认的\verb|shift left|和\verb|shift right|值适用于一系列平行的箭头，而无量纲的参数能帮助生成多重平行符号。
+\begin{tcblisting}{}
+\begin{tikzcd}
+  A \arrow[r]
+    & B \arrow[r, shift left]
+        \arrow[r, shift right]
+      & C \arrow[r]
+          \arrow[r, shift left=2]
+          \arrow[r, shift right=2]
+        & \cdots
+\end{tikzcd}
+\end{tcblisting}
+\par {\color{red}\texttt{/tikz/commutative diagrams/shift=<坐标>}}\hfill （no default）
+\par {\color{red}\texttt{/tikz/commutative diagrams/xshift=<坐标>}}\hfill （no default）
+\par {\color{red}\texttt{/tikz/commutative diagrams/yshift=<坐标>}}\hfill （no default）
+\begin{tcblisting}{}
+\begin{tikzcd}
+  A \arrow[r, yshift=0.7ex] \arrow[r, yshift=-0.7ex]
+    & B \arrow[d, xshift=0.7ex] \arrow[d, xshift=-0.7ex] \\
+    & C
+\end{tikzcd}
+\end{tcblisting}
+\par {\color{red}\texttt{/tikz/commutative diagrams/start anchor={[坐标变换]<锚位置>}}}\hfill （no default）
+\par 此关键词确定了箭头起点的位置，可选项是额外的坐标变换，空的\verb|<anchor>|选项将不指定初始位置，也就是一般的情形了。
+\par {\color{red}\texttt{/tikz/commutative diagrams/end anchor=<距离>}}\hfill （no default）\par
+此关键词的设置也是类推，但是针对箭头的中点。
+
+
+\begin{tcblisting}{}
+\begin{tikzcd}[cells={nodes={draw=gray}}]
+  A \arrow[r, black]
+    \arrow[r, blue, end anchor=north east]
+    \arrow[r,
+           red,
+           start anchor={[xshift=-1ex]},
+           end anchor={[yshift=2ex]north east}]
+    & B
+\end{tikzcd}
+\end{tcblisting}
+\par {\color{red}\texttt{/tikz/commutative diagrams/shorten=<距离>}}\hfill （no default）
+\par 此关键词缩短此箭头两端的长度。
+\begin{tcblisting}{}
+\begin{tikzcd}
+  A \arrow[r, shift left]
+    \ar[r, shorten=2mm, shift right]
+    & B
+\end{tikzcd}
+\end{tcblisting}
+值得注意的是箭头两端长度的缩减可以用Ti\emph{k}Z中的选项\verb|shorten <|和\verb|shorten >|。
+\subsection{三维交换图}
+\par {\color{red}\texttt{/tikz/commutative diagrams/crossing over}}\hfill （style，no value）
+\par 此选项在当前箭头下方画一条厚线，颜色为\verb|background color|，模拟两个交叉箭头的效果。
+\begin{tcblisting}{}
+\begin{tikzcd}[background color=gray!20]
+  A \arrow[dr] & B \arrow[dl, crossing over] \\
+  C            & D
+\end{tikzcd}
+\end{tcblisting}
+由于箭头是按照其被读取的顺序来画的，因此有必要推迟画某些箭头来得到所要的效果，这可以通过\verb|from|选项，如下图所示。
+\begin{tcblisting}{righthand width=6cm}
+\tikzcdset{
+  arrow style=tikz,
+  diagrams={>=stealth}
+}
+\begin{tikzcd}[row sep=scriptsize, column sep=scriptsize,background color=green!20!black!20]
+  & f^* E_V \arrow[dl] \arrow[rr] \arrow[dd] & & E_V \arrow[dl] \arrow[dd] \\
+  f^* E \arrow[rr, crossing over] \arrow[dd] & & E \\
+  & U \arrow[dl] \arrow[rr] &  & V \arrow[dl] \\
+  M \arrow[rr] & & N \arrow[from=uu, crossing over]\\
+\end{tikzcd}
+\end{tcblisting}
+\par {\color{red}\texttt{/tikz/commutative diagrams/crossing over clearance=<距离>}}\hfill （no default，初始值1.5ex）
+\par 此关键词设置由\verb|crossing over|所画 backgrounded-color线条的宽度。
+\subsection{标签选项}
+\par {\color{red}\texttt{/tikz/commutative diagrams/every label=<距离>}}\hfill （style，no value）
+\par 此样式应用于由\verb|\arrow|命令生成的每个标签。初始值为
+\begin{lstlisting}
+     /tikz/auto,
+     /tikz/font=<something>,
+     /tikz/inner sep=0.5ex
+\end{lstlisting}
+这里的\verb|<something>|是使得数学模式中应用\verb|\scriptstyle|模式的东西。
+\par \verb|/tikz/auto|选项使得标签在箭头前进方向的左边。选项\verb|/tikz/inner sep|控制标签和相应箭头的距离。
+\par{\color{red}\texttt{/tikz/commutative diagrams/labels=<选项>}}\hfill （no default）
+\par 此关键词使得\verb|<选项>|附属于\verb|every label|。
+\par{\color{red}\texttt{/tikz/commutative diagrams/marking}}\hfill （style，no value）
+\par {\color{red}\texttt{/tikz/commutative diagrams/description}}\hfill （style，no value）
+\par 此样式使得标签放在箭头上，颜色为background color。标签周围的间隙由\verb|/tikz/inner sep|决定。
+\begin{tcblisting}{}
+\begin{tikzcd}[background color=green!20!black!20]
+  A \arrow[r, "\phi" description] & B
+\end{tikzcd}
+\end{tcblisting}
+\end{document} 
